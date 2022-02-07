@@ -1,0 +1,227 @@
+     1                                  ;*****************************************************************************************************************************
+     2                                  ;Program name: "Circumference of a Circle".  This program takes an integer input and it computes the circumference of a     *
+     3                                  ;circle using the Egyptian value for pi, 22/7, and sends this value as output.  Copyright (C) 2020 Joshua Elmer             *
+     4                                  ;This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License  *
+     5                                  ;version 3 as published by the Free Software Foundation.                                                                    *
+     6                                  ;This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied         *
+     7                                  ;Warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.     *
+     8                                  ;A copy of the GNU General Public License v3 is available here:  <https://www.gnu.org/licenses/>.                           *
+     9                                  ;*****************************************************************************************************************************
+    10                                  
+    11                                  ;=======1=========2=========3=========4=========5=========6=========7=========8=========9=========0=========1=========2=========3**
+    12                                  ;
+    13                                  ;Author information
+    14                                  ;  Author name: Joshua Elmer
+    15                                  ;  Author email: joshuaelmer@csu.fullerton.edu
+    16                                  ;
+    17                                  ;Program information
+    18                                  ;  Program name: Integer Arithmetic
+    19                                  ;  Programming languages: One modules in C and one module in X86
+    20                                  ;  Date program began:     2020-Sept-18
+    21                                  ;  Date program completed: 2020-Sept-19
+    22                                  ;  Files in this program: egyptian.c, circle.asm, run.sh
+    23                                  ;  Status: Complete.  No errors found after extensive testing.
+    24                                  ;
+    25                                  ;References for this program
+    26                                  ;  Jorgensen, X86-64 Assembly Language Programming with Ubuntu, Version 1.1.40.
+    27                                  ;
+    28                                  ;Purpose
+    29                                  ;  Compute the circumference of a circle using an integer value for input.
+    30                                  ;
+    31                                  ;This file
+    32                                  ;   File name: circle.asm
+    33                                  ;   Language: X86-64 with Intel syntax
+    34                                  ;   Assemble: nasm -f elf64 -l circle.lis -o circle.o circle.asm
+    35                                  ;   Link: gcc -m64 -no-pie -o current.out driver.o circle.o
+    36                                  
+    37                                  
+    38                                  
+    39                                  
+    40                                  
+    41                                  
+    42                                  
+    43                                  ;Declare the names of programs called from this X86 source file, but whose own source code is not in this file.
+    44                                  extern printf
+    45                                  extern scanf
+    46                                  
+    47                                  ;Declare constants if needed
+    48                                  null equ 0
+    49                                  newline equ 10
+    50                                  
+    51                                  global circle                                 ;Make this program callable by other programs.
+    52                                  
+    53                                  segment .data                                     ;Initialized data are placed in this segment
+    54                                  
+    55 00000000 57656C636F6D652074-     welcome db "Welcome to your friendly circle circumference calculator.", newline, null
+    55 00000009 6F20796F7572206672-
+    55 00000012 69656E646C79206369-
+    55 0000001B 72636C652063697263-
+    55 00000024 756D666572656E6365-
+    55 0000002D 2063616C63756C6174-
+    55 00000036 6F722E0A00         
+    56 0000003B 506C6561736520656E-     promptforinteger1 db "Please enter the radius of a circle in whole number of meters: ", null
+    56 00000044 746572207468652072-
+    56 0000004D 6164697573206F6620-
+    56 00000056 6120636972636C6520-
+    56 0000005F 696E2077686F6C6520-
+    56 00000068 6E756D626572206F66-
+    56 00000071 206D65746572733A20-
+    56 0000007A 00                 
+    57 0000007B 546865206E756D6265-     outputformat1 db "The number %ld was received", 10, 0
+    57 00000084 7220256C6420776173-
+    57 0000008D 207265636569766564-
+    57 00000096 0A00               
+    58 00000098 257300                  stringoutputformat db "%s", 0
+    59 0000009B 256C6400                signedintegerinputformat db "%ld", null
+    60 0000009F 546865206369726375-     outputformat2 db "The circumference of a circle with this radius is %d ", 0
+    60 000000A8 6D666572656E636520-
+    60 000000B1 6F6620612063697263-
+    60 000000BA 6C6520776974682074-
+    60 000000C3 686973207261646975-
+    60 000000CC 732069732025642000 
+    61 000000D5 776974682061207265-     remainderformat db "with a remainder of %ld.", 10, 0
+    61 000000DE 6D61696E646572206F-
+    61 000000E7 6620256C642E0A00   
+    62 000000EF 54686520696E746567-     farewell db "The integer part of the circumference will be returned to the main program. Please enjoy your circles.", 10, 0
+    62 000000F8 65722070617274206F-
+    62 00000101 662074686520636972-
+    62 0000010A 63756D666572656E63-
+    62 00000113 652077696C6C206265-
+    62 0000011C 2072657475726E6564-
+    62 00000125 20746F20746865206D-
+    62 0000012E 61696E2070726F6772-
+    62 00000137 616D2E20506C656173-
+    62 00000140 6520656E6A6F792079-
+    62 00000149 6F757220636972636C-
+    62 00000152 65732E0A00         
+    63                                  
+    64                                  segment .bss                                      ;Uninitialized data are declared in this segment
+    65                                  
+    66                                  ;Empty segment: there are no un-initialized arrays.
+    67                                  
+    68                                  segment .text                                     ;Instructions are placed in this segment
+    69                                  circle:                                       ;Entry point for execution of this program.
+    70                                  
+    71                                  ;Back up the general purpose registers for the sole purpose of protecting the data of the caller.
+    72 00000000 55                      push rbp                                                    ;Backup rbp
+    73 00000001 4889E5                  mov  rbp,rsp                                                ;The base pointer now points to top of stack
+    74 00000004 57                      push rdi                                                    ;Backup rdi
+    75 00000005 56                      push rsi                                                    ;Backup rsi
+    76 00000006 52                      push rdx                                                    ;Backup rdx
+    77 00000007 51                      push rcx                                                    ;Backup rcx
+    78 00000008 4150                    push r8                                                     ;Backup r8
+    79 0000000A 4151                    push r9                                                     ;Backup r9
+    80 0000000C 4152                    push r10                                                    ;Backup r10
+    81 0000000E 4153                    push r11                                                    ;Backup r11
+    82 00000010 4154                    push r12                                                    ;Backup r12
+    83 00000012 4155                    push r13                                                    ;Backup r13
+    84 00000014 4156                    push r14                                                    ;Backup r14
+    85 00000016 4157                    push r15                                                    ;Backup r15
+    86 00000018 53                      push rbx                                                    ;Backup rbx
+    87 00000019 9C                      pushf                                                       ;Backup rflags
+    88                                  
+    89                                  ;There are 15 pushes above.  Make one more push of any value so that the number of pushes is an even number
+    90 0000001A 6AFF                    push qword -1                                               ;Now the number of pushes is even
+    91                                  ;Registers rax, rip, and rsp are usually not backed up.
+    92                                  
+    93                                  ;Output the welcome message                       ;This is a group of instructions jointly performing one task.
+    94 0000001C 48BF-                   mov qword rdi, stringoutputformat
+    94 0000001E [9800000000000000] 
+    95 00000026 48BE-                   mov qword rsi, welcome
+    95 00000028 [0000000000000000] 
+    96 00000030 B800000000              mov qword rax, 0
+    97 00000035 E8(00000000)            call printf
+    98                                  
+    99                                  ;Prompt for the first integer
+   100 0000003A 48BF-                   mov qword rdi, stringoutputformat
+   100 0000003C [9800000000000000] 
+   101 00000044 48BE-                   mov qword rsi, promptforinteger1                  ;Place the address of the prompt into rdi
+   101 00000046 [3B00000000000000] 
+   102 0000004E B800000000              mov qword rax, 0
+   103 00000053 E8(00000000)            call printf
+   104                                  
+   105                                  ;Input the first integer
+   106 00000058 48BF-                   mov qword rdi, signedintegerinputformat
+   106 0000005A [9B00000000000000] 
+   107 00000062 6AFF                    push qword -1                                     ;Place an arbitrary value on the stack; -1 is ok, any quad value will work
+   108 00000064 4889E6                  mov qword rsi, rsp                                ;Now rsi points to that dummy value on the stack
+   109 00000067 B800000000              mov qword rax, 0                                  ;No vector registers
+   110 0000006C E8(00000000)            call scanf                                        ;Call the external function; the new value is placed into the location that rsi points to
+   111 00000071 415E                    pop qword r14                                     ;First inputted integer is saved in r14
+   112                                  
+   113                                  ;Output the value previously entered
+   114 00000073 48BF-                   mov qword rdi, outputformat1
+   114 00000075 [7B00000000000000] 
+   115 0000007D B800000000              mov qword rax, 0
+   116 00000082 E8(00000000)            call printf
+   117                                  
+   118                                  ;calculating the value of pi
+   119 00000087 41B816000000            mov qword r8, 22
+   120 0000008D 41B907000000            mov qword r9, 7
+   121 00000093 4C89C0                  mov qword rax, r8
+   122 00000096 4899                    cqo
+   123 00000098 49F7F1                  div r9                            ;this will divide 22 by 7 and store the value in rax
+   124                                  
+   125                                  ;store the constant values needed for the circumference equation 2*pi*r
+   126 0000009B 41BA02000000            mov qword r10, 2
+   127 000000A1 4989C3                  mov qword r11, rax               ;storing the previously calculated Egyptian value of pi into 10
+   128 000000A4 B800000000              mov qword rax, 0
+   129                                  
+   130                                  
+   131                                  ;Circumference:
+   132                                  
+   133 000000A9 4C89F0                  mov qword rax, r14                                ;Copy the radius (operand) to rax
+   134 000000AC BA00000000              mov qword rdx, 0                                  ;rdx contains no data we wish to save.
+   135 000000B1 49F7EA                  imul r10                                           ;Use the signed multiplication instruction 'imul' followed by the the constant value
+   136 000000B4 49F7EB                  imul r11                                           ;Once again us 'imul' this time followed by the pi value
+   137                                  
+   138                                  ;Now the circumference is in the pair rdx:rax. If the product will fit entirely in 64 bits then it will be store completely
+   139                                  ;in rax and rdx is not needed. Nevertheless, we save both registers in the following 2 instructions.
+   140 000000B7 4989C4                  mov qword r12, rax                                ;High order bits are saved in r12
+   141 000000BA 4989D5                  mov qword r13, rdx                                ;Low order bits are saved in r13
+   142                                  
+   143                                  ;Output the Circumference of the circle
+   144 000000BD 48BF-                   mov qword rdi, outputformat2
+   144 000000BF [9F00000000000000] 
+   145 000000C7 4C89E6                  mov qword rsi, r12                                ;The high order bits are placed in the second parameter
+   146 000000CA 4C89EA                  mov qword rdx, r13                                ;The low order bits are placed in the third parameter
+   147 000000CD B800000000              mov qword rax, 0                                  ;Zero in rax indicates no vector parameters
+   148 000000D2 E8(00000000)            call printf
+   149                                  
+   150                                  
+   151                                  ;Show the remainder
+   152 000000D7 48BF-                   mov qword rdi, remainderformat
+   152 000000D9 [D500000000000000] 
+   153 000000E1 4C89EE                  mov qword rsi, r13                                ;Copy the remainder to rsi
+   154 000000E4 4C89EA                  mov qword rdx, r13                                ;Copy the remainder to rdx
+   155 000000E7 B800000000              mov qword rax, 0
+   156 000000EC E8(00000000)            call printf
+   157                                  
+   158                                  ;Output the farewell message
+   159 000000F1 48BF-                   mov qword rdi, stringoutputformat
+   159 000000F3 [9800000000000000] 
+   160 000000FB 48BE-                   mov qword rsi, farewell                           ;The starting address of the string is placed into the second parameter.
+   160 000000FD [EF00000000000000] 
+   161 00000105 B800000000              mov qword rax, 0
+   162 0000010A E8(00000000)            call printf
+   163                                  
+   164                                  ;Restore the original values to the general registers before returning to the caller.
+   165 0000010F 58                      pop rax                                                     ;Remove the extra -1 from the stack
+   166 00000110 9D                      popf                                                        ;Restore rflags
+   167 00000111 5B                      pop rbx                                                     ;Restore rbx
+   168 00000112 415F                    pop r15                                                     ;Restore r15
+   169 00000114 415E                    pop r14                                                     ;Restore r14
+   170 00000116 415D                    pop r13                                                     ;Restore r13
+   171 00000118 415C                    pop r12                                                     ;Restore r12
+   172 0000011A 415B                    pop r11                                                     ;Restore r11
+   173 0000011C 415A                    pop r10                                                     ;Restore r10
+   174 0000011E 4159                    pop r9                                                      ;Restore r9
+   175 00000120 4158                    pop r8                                                      ;Restore r8
+   176 00000122 59                      pop rcx                                                     ;Restore rcx
+   177 00000123 5A                      pop rdx                                                     ;Restore rdx
+   178 00000124 5E                      pop rsi                                                     ;Restore rsi
+   179 00000125 5F                      pop rdi                                                     ;Restore rdi
+   180 00000126 5D                      pop rbp                                                     ;Restore rbp
+   181                                  
+   182 00000127 B800000000              mov qword rax, 0                                  ;Return value 0 indicates successful conclusion.
+   183 0000012C C3                      ret                                               ;Pop the integer stack and jump to the address represented by the popped value.
